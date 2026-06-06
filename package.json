@@ -1,0 +1,21 @@
+{
+  "name": "criteria-adapter-starter-typescript",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "bun build --compile index.ts --outfile out/adapter && rm -rf proto && cp -R node_modules/@criteria/adapter-sdk/proto .",
+    "build:linux-amd64": "bun build --compile --target=bun-linux-x64 index.ts --outfile out/adapter-linux-amd64",
+    "build:linux-arm64": "bun build --compile --target=bun-linux-arm64 index.ts --outfile out/adapter-linux-arm64",
+    "build:darwin-arm64": "bun build --compile --target=bun-darwin-arm64 index.ts --outfile out/adapter-darwin-arm64",
+    "emit-manifest": "bun run index.ts --emit-manifest",
+    "test": "bun test",
+    "clean": "rm -rf out proto"
+  },
+  "dependencies": {
+    "@criteria/adapter-sdk": "^0.5.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.7.0"
+  }
+}
