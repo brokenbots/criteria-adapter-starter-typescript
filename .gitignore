@@ -3,3 +3,4 @@ out/
 proto/
 *.log
 .DS_Store
+artifact/

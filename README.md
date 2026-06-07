@@ -69,3 +69,21 @@ for the full `serveRemote` API.
 ## License
 
 MIT
+
+## Security & dependencies
+
+This starter ships the supply-chain baseline every Criteria adapter is expected
+to carry — see [SECURITY.md](SECURITY.md) and
+[docs/dependency-policy.md](docs/dependency-policy.md). CI (`ci.yml`) runs a
+**blocking** osv-scanner gate (over `bun.lock`) plus a non-blocking `bun outdated`
+report; `publish.yml` cross-compiles `linux/amd64`, `linux/arm64`, `darwin/arm64`
+and publishes one multi-platform signed OCI artifact.
+
+```bash
+bun run vuln-scan      # osv-scanner — known-vulnerability gate (WS49)
+bun run deps:outdated  # bun outdated — freshness report (WS50)
+```
+
+> The SDK is installed from its GitHub repo (`github:brokenbots/criteria-typescript-adapter-sdk`)
+> via a `prepare` build, and is listed in `trustedDependencies` so bun runs that
+> build. Switch to an npm version once the SDK is published.

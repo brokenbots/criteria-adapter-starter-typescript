@@ -1,10 +1,9 @@
 name: Publish Adapter
 
-# On every tag push (v*), build the single-binary adapter and publish it as a
-# signed OCI artifact via the reusable brokenbots/publish-adapter action. The
-# action signs keyless by default (needs id-token: write, granted below). To
-# also ship a runnable container image, build + push it and pass its reference
-# via the action's `image:` input (see the commented Dockerfile).
+# On every tag push (v*), cross-compile the adapter for every supported platform
+# with bun's --compile --target, lay the binaries out as bin/<os>/<arch>/<name>,
+# and publish them as a single multi-platform, signed OCI artifact via the
+# reusable brokenbots/publish-adapter action.
 
 on:
   push:
@@ -22,21 +21,34 @@ permissions:
   packages: write
   id-token: write # cosign keyless signing
 
+env:
+  # Published binary name; defaults to the repo name. Rename when you fork.
+  BIN: ${{ github.event.repository.name }}
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-
-      - name: Build adapter binary
+      - name: Cross-compile adapter binaries
         run: |
+          set -euo pipefail
           bun install
-          bun run build
-
+          declare -A targets=(
+            ["linux/amd64"]="bun-linux-x64"
+            ["linux/arm64"]="bun-linux-arm64"
+            ["darwin/arm64"]="bun-darwin-arm64"
+          )
+          for platform in "${!targets[@]}"; do
+            outdir="artifact/bin/${platform}"
+            mkdir -p "$outdir"
+            echo "building ${platform} (${targets[$platform]})"
+            bun build --compile --target="${targets[$platform]}" \
+              index.ts --outfile "$outdir/${BIN}"
+          done
       - name: Resolve version
         id: ver
         run: |
@@ -45,12 +57,10 @@ jobs:
           else
             echo "tag=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
           fi
-
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-
       - name: Publish
         uses: brokenbots/publish-adapter@v0
         with:
-          binary: ${{ github.workspace }}/out/adapter
+          binary: ${{ github.workspace }}/artifact
           registry: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ steps.ver.outputs.tag }}
